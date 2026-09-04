@@ -1,6 +1,6 @@
 # ZenSched Fire-Safety Reference Kit
 
-A copy-pasteable setup for a small fire-extinguisher and emergency-light shop (solo, or a 2–6 tech firm) that wants an AI assistant to run contracted building lists, a per-building device inventory (extinguishers, emergency lights, exit signs, hose reels), GPS-verified building visits, a per-device inspection form, local statutory records, and invoicing. ZenSched handles the live schedule, the tech's phone app, GPS check-ins at the building, and the Device Inspection form. A small local database on your computer holds your clients, buildings, devices, technicians, inspection summaries, and invoices.
+A copy-pasteable setup for a small fire-extinguisher and emergency-light shop (solo, or a 2–6 tech firm) that wants an AI assistant to run contracted building lists, a per-building device inventory (extinguishers, emergency lights, exit signs, hose reels), GPS-verified building visits, a per-device inspection form, local visit records, and invoicing. ZenSched handles the live schedule, the tech's phone app, GPS check-ins at the building, and the Device Inspection form. A small local database on your computer holds your clients, buildings, devices, technicians, inspection summaries, and invoices.
 
 **You do not need to know how to program or write SQL to use this.** You type plain English to your AI assistant ("schedule this week", "add Riverside Plaza", "what failed at Oak Street", "export Riverside", "invoice Meridian") and the AI does the work using two tools you set up once. Setup takes about 15 minutes and is the only technical part.
 
@@ -8,11 +8,11 @@ If you *are* a developer, skip to [For developers](#for-developers).
 
 ## This is not an AHJ e-file tool — read this first
 
-**What this kit is:** a way for a small fire shop to get every contracted building onto the tech's phone, prove GPS-verified arrival, record a Device Inspection (tag, type, Pass / Fail / Serviced, tag photo) once per device, and turn those records into a local statutory log, a client pack, invoices, and a list of open fails, with an AI assistant doing the clerical work.
+**What this kit is:** a way for a small fire shop to get every contracted building onto the tech's phone, prove GPS-verified arrival, record a Device Inspection (tag, type, Pass / Fail / Serviced, tag photo) once per device, and turn those records into a local visit log, a client pack, invoices, and a list of open fails, with an AI assistant doing the clerical work.
 
 **What it is not:**
 
-- **It is not an AHJ e-file tool.** It does not submit to a fire marshal, a building department, The Compliance Engine, Brycer, NFIRS, or any authority-having-jurisdiction portal. It does not produce a compliance certificate. `device_results` plus a `form_export` give you the tags, results, photos, and GPS-verified times; you (or the client) paste that into *your* report or email and file however you file today.
+- **It is not an AHJ e-file tool, and it is not the official / statutory service record.** It does not submit to a fire marshal, a building department, The Compliance Engine, Brycer, NFIRS, or any authority-having-jurisdiction portal. It does not produce a compliance certificate. NFPA 10 and OSHA 1910.157 (US), BS 5306-3 / BS 5266-1 (UK), and AS 1851 / AS 2293.2 (AU) specify who may service, what the tag and logbook must show, and how long to retain it. The Device Inspection is a visit checklist with photos — **not** that official record and **not** a replacement for the tag on the cylinder. Do not tell a fire marshal "it's in ZenSched." `device_results` plus a `form_export` give you the tags, results, photos, and GPS-verified times; you (or the client) paste that into *your* report or email and file however you file today.
 - **It is not a branded PDF inspection report generator.** Tools such as The Compliance Engine, Inspect Point, and similar products render a formatted report and often file it for you. This kit does not. The Device Inspection on the phone is an operational photo form; the "export" is plain text plus photo links.
 - **It does not watermark photos.** ZenSched records the GPS punch coordinates and the upload time server-side, but the exported image is **not** stamped with the date, time, and coordinates. The punch record is your corroboration that the tech was at the pin when the photos were taken. If an AHJ later wants a *readable* stamp on the image itself, shoot with your phone camera's timestamp / GPS overlay turned on and upload *that* image.
 - **The Device Inspection has no signature field.** On ZenSched a signature field replaces the Submit button. Submitting the form is just submitting the form; it is not a signed legal document.
@@ -180,12 +180,12 @@ In solo mode you invite yourself; the email arrives at your own address, you ins
 | `SQLITE_PATH` points nowhere / "unable to open database" | Folder from step 1 does not exist | Create the folder; the file is created automatically but the folder is not |
 | ZenSched tools return an auth error | Key still says `zsc_your_key_here`, or was pasted with a space | Re-paste the key, restart |
 | `payment_required` | Metered call with no balance | Follow the instructions in the response; $5 deposit |
-| AI creates shifts at the wrong hour | Timezone not set, or daylight saving changed | "Set my timezone offset to -05:00 in settings" (use your own offset) |
+| AI creates shifts at the wrong hour | Timezone not set, or daylight saving changed and `settings.timezone_offset` is stale | "Set my timezone offset to -05:00" (US Central CDT) or "-06:00" (CST). The stored offset is a fixed string and does not flip itself. US DST ends the first Sunday in November (2026-11-01) |
 | Shift creation fails for dates a couple of months out | The building's 60-day ZenSched event has expired | Say "renew the events"; the AI runs the roll-over in `SKILL.md` and retries |
 | Visit not on my phone | Booked locally but the ZenSched shift was never created (`needs_shift = 1`) | "Put today's inspections on my phone"; the AI finishes the schedule steps |
 | Check-in not GPS-verified at a campus / loading dock | You parked outside the policy radius, or the pin is on the road | "Set the check-in radius to 200 m" (`policy_update`), or "move the pin to the main entrance" (`location_update`, free). Do not ask to widen the radius "on that location" |
 | Forgot to check out | Shift still `checked_in` | Tell the AI the real time; ask for a 15-minute check-out reminder |
-| Device Inspection not on the phone | Form not assigned to that building's event before the shift was created | "Attach the Device Inspection to Riverside" (`form_assign`), then cancel and recreate the shift |
+| Device Inspection not on the phone | Form not assigned to that building's event before the shift was created | "Attach the Device Inspection to Riverside" (`form_assign(form_id, event_id=…)`); it installs on the existing shift, no cancel/recreate. Recreating with the same `shift-building-{id}-{date}` key would only replay the cancelled shift for 24 hours |
 | "Fail notes" shows even when the result is Pass | Conditional fields are web-only on ZenSched | Harmless; leave it blank |
 | Photos have no date/GPS printed on them | Working as intended | ZenSched does not burn a stamp onto the image. The punch record holds the GPS/time. Use a camera overlay if you need pixels stamped |
 | AI refuses to put the lockbox code on ZenSched | Working as intended | Access codes stay on your computer |
@@ -218,7 +218,7 @@ If something is confusing or broken in ZenSched itself, ask the AI to call `feed
 
 - location: `loc-building-{building_id}`
 - event: `event-building-{building_id}-{YYYYMMDD window start}`
-- shift: `shift-building-{building_id}-{YYYYMMDD}` (a same-day second visit or a tech swap appends `-2`)
+- shift: `shift-building-{building_id}-{YYYYMMDD}` (a same-day second visit, a tech swap, or any recreate after cancel appends the next unused suffix: `-2`, then `-3`, … — never reuse a suffix, or the 24-hour replay returns the cancelled shift)
 - assignment: `assign-device-inspection-{event_id}`
 - cancel: `cancel-shift-{shift_id}`
 - worker: `worker-{email}`
@@ -226,7 +226,7 @@ If something is confusing or broken in ZenSched itself, ask the AI to call `feed
 
 ZenSched caches idempotent responses for 24 hours. The views emit `loc_idempotency_key`, `event_idempotency_key`, and `shift_idempotency_key` per row.
 
-**Timestamps.** `shift_create` / `shift_update` take `start` and `end` in ISO 8601 with an explicit offset. Always use the business's local offset from `settings.timezone_offset` (e.g. `2026-09-10T09:00:00-05:00`), never `Z`. The views build these strings so the agent does not have to.
+**Timestamps.** `shift_create` / `shift_update` take `start` and `end` in ISO 8601 with an explicit offset. Always use the business's local offset from `settings.timezone_offset` (e.g. `2026-09-10T09:00:00-05:00`), never `Z`. The views stamp that setting onto `start_iso` / `end_iso` verbatim. **The offset is a stored string and must be updated at each clock change.** US Central is `-05:00` (CDT) from March to early November and `-06:00` (CST) otherwise; a stale offset puts every November shift an hour off.
 
 **Metered reads.** `form_export` covers a week or a single event in one call and is what "export Riverside Plaza" uses. Both `form_submissions` and `form_export` bill $0.05 per submission ($0.15 with a photo), once per submission ever. A 12-device visit is 12 submissions. `shift_list`, `shift_status`, `event_get`, and `timesheet_export(mode="hours"|"raw")` are free.
 

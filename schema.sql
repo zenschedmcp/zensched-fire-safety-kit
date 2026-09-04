@@ -19,11 +19,14 @@
 -- Every statement is idempotent (IF NOT EXISTS / INSERT OR IGNORE), so it is
 -- safe to run this file again on an existing database.
 --
--- THIS IS NOT AN AHJ E-FILE TOOL. It does not submit to a fire marshal, a
--- building department, The Compliance Engine, Brycer, or any authority-having-
--- jurisdiction portal. inspections + device_results are YOUR local statutory
--- record (who was there, GPS times, pass / fail / serviced per tag). You (or
--- the client) still file whatever the AHJ wants, on their form.
+-- THIS IS NOT AN AHJ E-FILE TOOL and not the official / statutory service
+-- record (NFPA 10 / OSHA 1910.157, BS 5306-3 / BS 5266-1, AS 1851 / AS 2293.2).
+-- It does not submit to a fire marshal, a building department, The Compliance
+-- Engine, Brycer, or any authority-having-jurisdiction portal. inspections +
+-- device_results are YOUR local visit notes (who was there, GPS times,
+-- pass / fail / serviced per tag) — not the official logbook and not a
+-- replacement for the tag on the cylinder. You (or the client) still file
+-- whatever the AHJ wants, on their form.
 --
 -- PRIVACY: buildings.access_notes (lockbox, fire-panel code, after-hours
 -- contact) and technicians.license_no live ONLY in this file on your computer.
@@ -202,7 +205,7 @@ CREATE TABLE IF NOT EXISTS inspections (
   checkin_distance_m INTEGER,
   notes TEXT,
   invoiced INTEGER DEFAULT 0,
-  exported_at TEXT,                                 -- when the client / AHJ pack was produced
+  exported_at TEXT,                                 -- when the client pack was produced (not an AHJ filing)
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE,
@@ -667,8 +670,8 @@ GROUP BY i.inspection_id
 ORDER BY i.scheduled_start;
 
 -- Latest result per device is fail and has not been resolved. Lead with
--- these at session start — a failed extinguisher sitting open is the
--- statutory item the client will ask about.
+-- these at session start — a failed extinguisher sitting open is what
+-- the property manager will ask about. This is not the official AHJ log.
 CREATE VIEW IF NOT EXISTS device_fails_open AS
 SELECT
   d.device_id,
