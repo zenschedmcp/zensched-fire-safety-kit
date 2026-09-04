@@ -4,7 +4,7 @@ Setup is about 15 minutes, once. After that everything is plain English to your 
 
 You need: Claude Desktop (or Cursor) and [Node.js LTS](https://nodejs.org/) installed. Nothing else.
 
-Before you start, read the "This is not an AHJ e-file tool" section of `README.md`. Short version: this kit puts each building visit on your phone, GPS-stamps arrival, and collects a per-device photo inspection; it does not file with a fire marshal or The Compliance Engine, does not generate a branded PDF, and does not burn a GPS stamp onto photos. Lockbox codes and licence numbers stay on your computer; ZenSched only ever sees a building label (`Riverside Plaza`), an address, and the Device Inspection form.
+Before you start, read the "This is not an AHJ e-file tool" section of `README.md`. Short version: this kit puts each building visit on your phone, GPS-stamps arrival, and collects a per-device photo inspection; it does not file with a fire marshal or The Compliance Engine, does not generate a branded PDF, and does not burn a GPS stamp onto photos. The Device Inspection is **not** the official NFPA 10 / BS 5306-3 / AS 1851 service record (and not a replacement for the tag on the cylinder). Lockbox codes and licence numbers stay on your computer; ZenSched only ever sees a building label (`Riverside Plaza`), an address, and the Device Inspection form.
 
 ## 1. Make a data folder
 
@@ -87,7 +87,7 @@ The AI pulls your GPS-verified arrival and departure (free), reads the Device In
 
 > Export Riverside Plaza.
 
-A plain-text client pack: GPS in/out, one line per device (tag, type, result, fail notes, photo links), coverage. You paste it into an email to the property manager. This is **not** an AHJ filing and not a branded PDF.
+A plain-text client pack: GPS in/out, one line per device (tag, type, result, fail notes, photo links), coverage. You paste it into an email to the property manager. This is **not** an AHJ filing, **not** the official NFPA 10 / BS 5306-3 / AS 1851 record, and not a branded PDF.
 
 ## 9. Money
 

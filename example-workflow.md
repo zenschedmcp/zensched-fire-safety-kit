@@ -2,7 +2,7 @@
 
 This shows the exact tool calls the agent makes for a first week of operation, following `SKILL.md`. The owner only types the quoted lines; everything else is the agent's work. Assumes setup from `QUICKSTART.md` is complete (both MCP servers configured, `schema.sql` loaded, `SKILL.md` given as instructions).
 
-The business is **Apex Fire Protection**, a solo shop (Luis Ortega) in Dallas, Central time (`-05:00` in September). IDs and responses are illustrative. ZenSched IDs are integers. Watch what does **not** cross to ZenSched: the lockbox code, Luis's licence number. ZenSched sees `Riverside Plaza`, a street address, and a per-device Device Inspection. Nothing is filed with an AHJ.
+The business is **Apex Fire Protection**, a solo shop (Luis Ortega) in Dallas, Central time (`-05:00` in September; US DST ends 2026-11-01, then CST `-06:00`). IDs and responses are illustrative. ZenSched IDs are integers. Watch what does **not** cross to ZenSched: the lockbox code, Luis's licence number. ZenSched sees `Riverside Plaza`, a street address, and a per-device Device Inspection. Nothing is filed with an AHJ. The Device Inspection is **not** the official NFPA 10 / BS 5306-3 / AS 1851 service record.
 
 ## Session start (every session)
 
@@ -48,7 +48,7 @@ sqlite_execute:
 sqlite_execute: UPDATE settings SET value = '1' WHERE key = 'default_tech_id';
 ```
 
-> You're invited; install the app from the email. Your visits will land on your own phone. Next, the Device Inspection: it's free to create and every unit comes back with the tag, type, Pass / Fail / Serviced, up to two tag photos, and fail notes when it fails. No signature pad on it, on purpose — this is not an AHJ filing. Want me to set it up now?
+> You're invited; install the app from the email. Your visits will land on your own phone. Next, the Device Inspection: it's free to create and every unit comes back with the tag, type, Pass / Fail / Serviced, up to two tag photos, and fail notes when it fails. No signature pad on it, on purpose — this is not an AHJ filing and not the official NFPA 10 / BS 5306-3 / AS 1851 record. Want me to set it up now?
 
 Owner: *"yes"*
 
@@ -61,7 +61,7 @@ form_create:
 
 ```json
 [
-  {"type": "section", "label": "Device", "identifier": "device", "text": "One submission per device. Type the tag exactly as it is on the unit. Do not write lockbox codes, fire-panel codes, or licence numbers here. Photos are stored as uploaded — ZenSched does not burn a date, time, or GPS stamp onto the image. This form is not an AHJ filing."},
+  {"type": "section", "label": "Device", "identifier": "device", "text": "One submission per device. Type the tag exactly as it is on the unit. Do not write lockbox codes, fire-panel codes, or licence numbers here. Photos are stored as uploaded — ZenSched does not burn a date, time, or GPS stamp onto the image. This form is not an AHJ filing and is not the official NFPA 10 / BS 5306-3 / AS 1851 service record."},
   {"type": "text", "label": "Device tag", "identifier": "device_tag", "required": true, "placeholder": "FE-12"},
   {"type": "select", "label": "Type", "identifier": "device_type", "required": true,
    "options": ["Extinguisher", "Light", "Exit", "Hose"]},
@@ -217,7 +217,8 @@ form_export:
       { submission_id: 4401, worker_id: 601, event_id: 8101, submitted_at: "2026-09-10 09:12:00",
         data: { device_tag: "FE-01", device_type: "extinguisher", result: "fail",
                 fail_notes: "Gauge in the red; needs recharge." },
-        media: [ { field: "tag_photo", ... }, { field: "tag_photo", ... } ] },
+        media: [ { field_id: 12, cdn_url: "https://cdn.example/fe01-a.jpg", thumbnail_url: "https://cdn.example/fe01-a-t.jpg", original_filename: "fe01-a.jpg" },
+                 { field_id: 12, cdn_url: "https://cdn.example/fe01-b.jpg", thumbnail_url: "https://cdn.example/fe01-b-t.jpg", original_filename: "fe01-b.jpg" } ] },
       { submission_id: 4402, ..., data: { device_tag: "EL-A", device_type: "light", result: "pass" } },
       { submission_id: 4403, ..., data: { device_tag: "EX-2", device_type: "exit", result: "pass" } },
       { submission_id: 4404, ..., data: { device_tag: "HR-B", device_type: "hose", result: "serviced" } }
@@ -254,7 +255,7 @@ sqlite_query: SELECT * FROM device_fails_open;
 
 > Closed **INSP-2026-0001**: Riverside Plaza, GPS-verified 08:54–10:22.
 >
-> **One fail — FE-01 (lobby extinguisher):** *"Gauge in the red; needs recharge."* EL-A and EX-2 passed; HR-B was serviced. 4 of 4 devices submitted. $185 now receivable from Meridian, net 30. Next monthly visit is Oct 10. This is on `reports_to_export` until you ask me to export the pack. It is not an AHJ filing.
+> **One fail — FE-01 (lobby extinguisher):** *"Gauge in the red; needs recharge."* EL-A and EX-2 passed; HR-B was serviced. 4 of 4 devices submitted. $185 now receivable from Meridian, net 30. Next monthly visit is Oct 10. This is on `reports_to_export` until you ask me to export the pack. It is not an AHJ filing and not the official NFPA 10 / BS 5306-3 / AS 1851 record.
 
 ## "Export Riverside Plaza."
 
@@ -268,7 +269,7 @@ form_export: form_id 401, event_id 8101, since "2026-09-10", until "2026-09-10",
 sqlite_execute: UPDATE inspections SET exported_at = datetime('now', 'localtime') WHERE inspection_id = 1;
 ```
 
-The agent writes a plain-text client pack: inspection number, street, GPS in/out, one line per device with photo URLs, and a line that this is **not** an AHJ filing and that photos have **no burned-in GPS stamp**.
+The agent writes a plain-text client pack: inspection number, street, GPS in/out, one line per device with photo URLs, and a line that this is **not** an AHJ filing, **not** the official NFPA 10 / BS 5306-3 / AS 1851 record, and that photos have **no burned-in GPS stamp**.
 
 ## "Invoice Meridian."
 
@@ -309,9 +310,15 @@ sqlite_query:   SELECT invoice_number, invoice_date, due_date, total_amount FROM
 
 ## Eight weeks later: "Schedule this week."
 
+US DST ended 2026-11-01. Dallas is now CST (`-06:00`). Views stamp `settings.timezone_offset` onto `start_iso` / `end_iso`, so flip the setting first or every November shift is an hour off.
+
 ```
+sqlite_execute: UPDATE settings SET value = '-06:00' WHERE key = 'timezone_offset';
+
 sqlite_query: SELECT * FROM buildings_due;
-  → 2026-11-10 | Riverside Plaza | evt 8101 | event_valid_until 2026-11-08 | event_needs_roll 1 | ...
+  → 2026-11-10 | Riverside Plaza | evt 8101 | event_valid_until 2026-11-08 | event_needs_roll 1
+               | start_iso 2026-11-10T09:00:00-06:00 | end_iso 2026-11-10T10:30:00-06:00
+               | shift-building-1-20261110
 
 event_create:
   location_id: 9201
@@ -325,10 +332,15 @@ form_assign: form_id 401, event_id 8201, idempotency_key "assign-device-inspecti
 sqlite_execute: UPDATE buildings SET zensched_event_id = 8201, event_valid_until = '2027-01-08' WHERE building_id = 1;
 
 INSERT INTO inspections ... scheduled_start '2026-11-10T09:00'
-shift_create: event_id 8201, key "shift-building-1-20261110"
+shift_create:
+  event_id: 8201
+  worker_id: 601
+  start: "2026-11-10T09:00:00-06:00"
+  end:   "2026-11-10T10:30:00-06:00"
+  idempotency_key: "shift-building-1-20261110"
 ```
 
-> Scheduled the week. Riverside's ZenSched event expired Nov 8, so I renewed it through Jan 8 and attached the Device Inspection again. Nothing changes for you on the phone except the new date.
+> Scheduled the week. I updated the timezone to CST (`-06:00`) after DST ended Nov 1. Riverside's ZenSched event expired Nov 8, so I renewed it through Jan 8 and attached the Device Inspection again. Nothing else changes for you on the phone except the new date.
 
 ## Summary of who stored what
 
@@ -344,4 +356,4 @@ shift_create: event_id 8201, key "shift-building-1-20261110"
 | The Thursday shift | ZenSched only | Live schedule |
 | GPS punches | ZenSched only; stamps copied to `inspections` | Verified record |
 | Four Device Inspection submissions with photos | ZenSched (originals); tag / type / result / notes / `report_dc_id` in `device_results` | Read once (metered), then answered from SQLite |
-| One invoice, open fail on FE-01 | SQLite | Money and statutory follow-up — not an AHJ filing |
+| One invoice, open fail on FE-01 | SQLite | Money and local follow-up — not an AHJ filing, not the official NFPA / BS / AS record |
